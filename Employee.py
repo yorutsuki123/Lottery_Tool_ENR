@@ -14,7 +14,7 @@ class Employee:
     year = 0
     award = None
     awardNum = 0
-    keyList = ['nid', 'apart', 'name', 'year', 'award']
+    keyList = ['nid', 'apart', 'name', 'year', 'award', 'exclude']
     showListData = {
         'nid': {
             'text': '員工編號', 
@@ -33,14 +33,14 @@ class Employee:
         'name': {
             'text': '姓名', 
             'font': (font, 20), 
-            'width': 15, 
+            'width': 12, 
             'height': 1,
             'relief': tk.GROOVE
         },
         'year': {
             'text': '年資', 
             'font': (font, 20), 
-            'width': 6, 
+            'width': 4, 
             'height': 1,
             'relief': tk.GROOVE
         },
@@ -50,14 +50,22 @@ class Employee:
             'width': 15, 
             'height': 1,
             'relief': tk.GROOVE
+        },
+        'exclude': {
+            'text': '備註', 
+            'font': (font, 20), 
+            'width': 4, 
+            'height': 1,
+            'relief': tk.GROOVE
         }
     }
     
-    def __init__(self, nid, apart, name, year, award=None, awardNum=None):
+    def __init__(self, nid, apart, name, year, exclude, award=None, awardNum=None):
         self.nid = nid
         self.name = name
         self.apart = apart
         self.year = year
+        self.exclude = exclude if type(exclude) == bool else (exclude == 'Y')
         self.award = award
         self.awardNum = awardNum
         if awardNum != None and awardNum > Employee.globalAwardCount:
@@ -75,7 +83,8 @@ class Employee:
              'name': self.name,
              'apart': self.apart,
              'year': self.year,
-             'award': '' if self.award == None else self.award}
+             'award': '' if self.award == None else self.award,
+             'exclude': self.exclude}
         return d
      
     def getFullDict(self):
@@ -84,14 +93,16 @@ class Employee:
              'apart': self.apart,
              'year': self.year,
              'award': self.award,
-             'awardNum': self.awardNum}
+             'awardNum': self.awardNum,
+             'exclude': self.exclude}
         return d
 
     def getList(self):
         l = [self.nid,
-             self.name,
              self.apart,
+             self.name,
              self.year,
+             'Y' if self.exclude else '',
              '' if self.award == None else self.award]
         return l
     
@@ -112,23 +123,23 @@ class Employee:
     
     @staticmethod
     def importList(fn):
-        lst = FileIO.loadXlsx(fn, '員工名單', 4)
+        lst = FileIO.loadXlsx(fn, '員工名單', 5)
         Employee.globalList = []
         for i in lst:
-            Employee(i[0], i[1], i[2], i[3])
+            Employee(i[0], i[1], i[2], i[3], i[4])
         Employee.saveList()
     
     @staticmethod
     def exportList(fn):
-        k = ['員工編號', '部門單位', '姓名', '年資', '得獎']
-        w = [15, 24, 12, 5, 20]
+        k = ['員工編號', '部門單位', '姓名', '年資', '備註', '得獎']
+        w = [15, 24, 12, 5, 5, 20]
         lst = Employee.getListList()
         FileIO.dumpXlsx(fn, '員工名單', k, w, lst)
         
     @staticmethod
     def exportEmptyList(fn):
-        k = ['員工編號', '部門單位', '姓名', '年資']
-        w = [15, 24, 12, 5]
+        k = ['員工編號', '部門單位', '姓名', '年資', '備註']
+        w = [15, 24, 12, 5, 5]
         FileIO.dumpXlsx(fn, '員工名單', k, w)
     
     @staticmethod
@@ -156,7 +167,8 @@ class Employee:
             Employee(i['nid'], 
                      i['apart'], 
                      i['name'], 
-                     i['year'], 
+                     i['year'],
+                     i['exclude'], 
                      i['award'], 
                      i['awardNum'])
             
@@ -174,15 +186,19 @@ class Employee:
         Employee.saveList()
     
     @staticmethod
-    def getSearchList(award=None, minYear=0):
+    def getSearchList(award=None, minYear=0, exclude=False):
         l = Employee.getFullDictList()
         l = sorted(l, key = lambda s: s['awardNum'] if s['awardNum'] != None else 0)
         l = [i for i in l if i['award'] == award and i['year'] >= minYear]
+        if exclude:
+            l = [i for i in l if not i['exclude']]
         return l
     
     @staticmethod
-    def getSearchObjList(award=None, minYear=0):
+    def getSearchObjList(award=None, minYear=0, exclude=False):
         l = Employee.globalList.copy()
         l = sorted(l, key = lambda s: s.awardNum if s.awardNum != None else 0)
         l = [i for i in l if i.award == award and i.year >= minYear]
+        if exclude:
+            l = [i for i in l if not i.exclude]
         return l

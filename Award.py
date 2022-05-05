@@ -17,7 +17,7 @@ class Award:
     
     img200_200 = None
     
-    keyList = ['img', 'award', 'desc', 'num', 'way', 'minYear']
+    keyList = ['img', 'award', 'desc', 'num', 'way', 'minYear', 'exclude']
     
     showListData = {
         'img': {
@@ -51,25 +51,34 @@ class Award:
         'way': {
             'text': '抽取方式', 
             'font': (font, 20), 
-            'width': 10, 
+            'width': 8, 
             'height': 1,
             'relief': tk.GROOVE
         },
         'minYear': {
             'text': '最小年資', 
             'font': (font, 20), 
-            'width': 10, 
+            'width': 8, 
+            'height': 1,
+            'relief': tk.GROOVE
+        },
+        'exclude': {
+            'text': '備註', 
+            'font': (font, 20), 
+            'width': 4, 
             'height': 1,
             'relief': tk.GROOVE
         }
     }
     
-    def __init__(self, img, award, desc, num, way, minYear, ind = -1):
+    def __init__(self, img, award, desc, num, way, minYear, exclude, ind = -1):
+        award = str(award)
         self.award = award
         self.desc = desc
         self.num = num
         self.way = '一次抽出' if way != None and '一次' in way else '逐次抽出'
         self.minYear = minYear if minYear != None else 0
+        self.exclude = exclude if type(exclude) == bool else (exclude == 'Y')
         
         if not os.path.exists('./data/award_img'):
             os.makedirs('./data/award_img')
@@ -84,7 +93,8 @@ class Award:
             iTmp.convert('RGB').save('./data/award_img/' + award + '.png')
             
         self.img = './data/award_img/' + award + '.png'
-        self.img200_200 = ImageTk.PhotoImage(Image.open(img).resize((190, 185), Image.ANTIALIAS))
+        self.img200_200 = ImageTk.PhotoImage(iTmp.resize((190, 185), Image.ANTIALIAS))
+        
         
         if ind == -1:
             Award.globalList.append(self)
@@ -104,7 +114,8 @@ class Award:
              'desc': self.desc,
              'num': self.num,
              'way': self.way,
-             'minYear': self.minYear}
+             'minYear': self.minYear,
+             'exclude': self.exclude}
         return d
      
     @staticmethod
@@ -114,16 +125,16 @@ class Award:
     
     @staticmethod
     def importList(fn):
-        lst = FileIO.loadXlsx(fn, '獎項', 6)
+        lst = FileIO.loadXlsx(fn, '獎項', 7)
         Award.globalList = []
         for i in lst:
-            Award('./award_img_import/' + i[5], i[0], i[1], i[2], i[3], i[4])
+            Award('./award_img_import/' + i[5], i[0], i[1], i[2], i[3], i[4], i[6])
         Award.saveList()
     
     @staticmethod
     def exportEmptyList(fn):
-        k = ['獎項', '獎品名稱', '數量', '抽取方式(逐次抽出/一次抽出)', '最小年資', '圖片檔案名稱(檔名與附檔名，路徑在"./award_img_import")']
-        w = [12, 20, 8, 16, 10, 20]
+        k = ['獎項', '獎品名稱', '數量', '抽取方式(逐次抽出/一次抽出)', '最小年資', '圖片檔案名稱(檔名與附檔名，路徑在"./award_img_import")', '備註']
+        w = [12, 20, 8, 16, 10, 20, 8]
         FileIO.dumpXlsx(fn, '獎項', k, w)
     
     @staticmethod
@@ -136,7 +147,8 @@ class Award:
                   i['desc'], 
                   i['num'], 
                   i['way'], 
-                  i['minYear'])
+                  i['minYear'],
+                  i['exclude'])
             
     @staticmethod
     def saveList():

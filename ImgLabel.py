@@ -32,7 +32,7 @@ class ImageLabel(tk.Label):
             self.next_frame()
 
     def unload(self):
-        self.config(image="")
+        #self.config(image="")
         self.frames = None
 
     def next_frame(self):

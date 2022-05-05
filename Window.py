@@ -320,7 +320,7 @@ class EmployeePage(SubPage):
             
     def exportAward(self):
         fn = filedialog.asksaveasfilename(initialdir='./', 
-                                          initialfile='award_list.xlsx', 
+                                          initialfile='award_result.xlsx', 
                                           defaultextension='.xlsx', 
                                           filetypes=(("All","*.xlsx"),
                                                      ("xlsx file","*.xlsx")))
@@ -418,6 +418,7 @@ class AwardPage(SubPage):
 class LotteryPage(SubPage):
     
     nowLottery = 0
+    isLotterting = False
     
     def __init__(self, w):
         super().__init__(w, False)
@@ -455,13 +456,13 @@ class LotteryPage(SubPage):
                                        fill='#FFFF00', anchor=tk.CENTER)
         self.rollTxt1 = bg.create_text(w * 0.20, h * 0.79, text='', 
                                        font=(self.window.font, int(32 * w / 1920), 'bold'),
-                                       fill='#000000', anchor=tk.CENTER)
+                                       fill='#000000', anchor=tk.CENTER, justify=tk.CENTER)
         self.rollTxt2 = bg.create_text(w * 0.35, h * 0.79, text='', 
                                        font=(self.window.font, int(32 * w / 1920), 'bold'),
-                                       fill='#000000', anchor=tk.CENTER)
+                                       fill='#000000', anchor=tk.CENTER, justify=tk.CENTER)
         self.rollTxt3 = bg.create_text(w * 0.50, h * 0.79, text='', 
                                        font=(self.window.font, int(32 * w / 1920), 'bold'), 
-                                       fill='#000000', anchor=tk.CENTER)
+                                       fill='#000000', anchor=tk.CENTER, justify=tk.CENTER)
         
     def createTable(self):
         bg = self.window.backgroundCanvas
@@ -549,16 +550,22 @@ class LotteryPage(SubPage):
         self.rollBtnImg = ImageTk.PhotoImage(Image.open('image/roll_btn.png').resize((int(150 * w / 1920), int(150 * h / 1080)), Image.ANTIALIAS))
         self.rollBtn = bg.create_image(w * 0.67, h * 0.8, image=self.rollBtnImg, anchor=tk.CENTER)
         bg.tag_bind(self.rollBtn, '<Button-1>', lambda x:self.lottery())
+        self.window.window.bind("<Return>", lambda x:self.lottery())
         self.lastBtnImg = ImageTk.PhotoImage(Image.open('image/last.png').resize((int(150 * w / 1920), int(150 * h / 1080)), Image.ANTIALIAS))
         self.lastBtn = bg.create_image(w * 0.8, h * 0.85, image=self.lastBtnImg, anchor=tk.CENTER)
         bg.tag_bind(self.lastBtn, '<Button-1>', lambda x:self.goNext(-1))
+        self.window.window.bind("<Left>", lambda x:self.goNext(-1))
         self.nextBtnImg = ImageTk.PhotoImage(Image.open('image/next.png').resize((int(150 * w / 1920), int(150 * h / 1080)), Image.ANTIALIAS))
         self.nextBtn = bg.create_image(w * 0.9, h * 0.85, image=self.nextBtnImg, anchor=tk.CENTER)
         bg.tag_bind(self.nextBtn, '<Button-1>', lambda x:self.goNext(1))
+        self.window.window.bind("<Right>", lambda x:self.goNext(1))
     
     def lottery(self):
+        if LotteryPage.isLotterting:
+            return
+        LotteryPage.isLotterting = True
         def doLottery():
-            ept = Employee.getSearchObjList(None, Award.globalList[LotteryPage.nowLottery].minYear)
+            ept = Employee.getSearchObjList(None, Award.globalList[LotteryPage.nowLottery].minYear, Award.globalList[LotteryPage.nowLottery].exclude)
             random.shuffle(ept)
             n = 1
             if Award.globalList[LotteryPage.nowLottery].way == '一次抽出':
@@ -574,9 +581,10 @@ class LotteryPage(SubPage):
             self.rollImg3.destroy()
             l = Award.globalList[LotteryPage.nowLottery].num
             lst = Employee.getSearchList(Award.globalList[LotteryPage.nowLottery].award)
-            ept = Employee.getSearchList(None, Award.globalList[LotteryPage.nowLottery].minYear)
-            if (not len(lst) < l) or (len(ept) == 0):
+            ept = Employee.getSearchList(None, Award.globalList[LotteryPage.nowLottery].minYear, Award.globalList[LotteryPage.nowLottery].exclude)
+            if (len(lst) >= l) or (len(ept) == 0):
                 Employee.exportAward('./lottery_result/' + time.strftime('%Y%m%d_%H%M%S') + '.xlsx')
+            LotteryPage.isLotterting = False
         
         bg = self.window.backgroundCanvas
         self.window.window.update()
@@ -600,11 +608,14 @@ class LotteryPage(SubPage):
         bg = self.window.backgroundCanvas
         l = Award.globalList[LotteryPage.nowLottery].num
         lst = Employee.getSearchList(Award.globalList[LotteryPage.nowLottery].award)
-        ept = Employee.getSearchList(None, Award.globalList[LotteryPage.nowLottery].minYear)
+        ept = Employee.getSearchList(None, Award.globalList[LotteryPage.nowLottery].minYear, Award.globalList[LotteryPage.nowLottery].exclude)
         if (not len(lst) < l) or (len(ept) == 0):
             bg.delete(self.rollBtn)
             bg.delete(self.rollBtnTxt)
+            self.window.window.unbind("<Return>")
         if not LotteryPage.nowLottery > 0:
             bg.delete(self.lastBtn)
+            self.window.window.unbind("<Left>")
         if not LotteryPage.nowLottery + 1 < len(Award.globalList):
             bg.delete(self.nextBtn)
+            self.window.window.unbind("<Right>")
